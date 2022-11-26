@@ -6,6 +6,7 @@
 <body onload="welcome();">
 
 <h1>Welcome!</h1>
+<h2>Number of page visits: {{cookie}}</h2>
 
 <p>
     Have you seen this cat? Now you have :^)  
@@ -14,35 +15,4 @@
 <img src="image/rice.jpg" alt="Here's a cat" class="my_image"/>
 
 </body>
-</html>
-
-
-<!-- sample form from hw2 -->
-<form action="/image-upload" id="image-form" method="post" enctype="multipart/form-data">
-
-    <input value= {{token}} name="xsrf_token" hidden>
-    
-    <label for="image-form-comment">Caption((ʕ•㉨•ʔ)): </label>
-    <textarea id="image-form-comment" name="comment" cols="40" rows="6"></textarea>
-    <br/>
-    
-    <label for="form-file">Image: </label>
-    <input id="form-file" type="file" name="upload">
-    <input type="submit" value="Post">
- </form>
-
-
- <!-- objective 1 template -->
- <head>
-     <meta charset="UTF-8">
-    <title>This page was generated from a template</title>
-</head>
-
-
-<h4> Current Comments: {{comment}}</h4>
-
-{{loop}}
-    <p>Caption = {{caption}}</p>
-    <img src = "image/{{filename}}"/> 
-{{end_loop}}
 </html>
