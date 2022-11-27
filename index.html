@@ -6,13 +6,39 @@
 <body onload="welcome();">
 
 <h1>Welcome!</h1>
-<h2>Number of page visits: {{cookie}}</h2>
+<h3>Number of page visits: {{cookie}}</h3>
 
 <p>
     Have you seen this cat? Now you have :^)  
 </p>
 
 <img src="image/rice.jpg" alt="Here's a cat" class="my_image"/>
+
+<h4> Sign Up Here! ( ˘ ³˘)</h4>
+    <form action="/signup" id="signup-form" method="post" enctype="form-data">
+
+      <label for="username">username: </label>
+      <textarea id="username" name="username" cols="20" rows="1"></textarea>
+      <br/>
+      <label for="password">password: </label>
+      <textarea id="password" name="password" cols="20" rows="1"></textarea>
+      <br/>
+      <input type="submit" value="Sign Up">
+
+    </form>
+
+<h4> Login Here! ♡＼(￣▽￣)／♡ </h4>
+    <form action="/login" id="login-form" method="post" enctype="form-data">
+
+      <label for="username">username: </label>
+      <textarea id="username" name="username" cols="20" rows="1"></textarea>
+      <br/>
+      <label for="password">password: </label>
+      <textarea id="password" name="password" cols="20" rows="1"></textarea>
+      <br/>
+      <input type="submit" value="Login">
+
+    </form>
 
 </body>
 </html>
