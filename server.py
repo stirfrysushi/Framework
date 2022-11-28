@@ -209,10 +209,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             # store hash of token 
                             token_db.insert_one({"username": username, "token": hash,"id": 1})
 
-                            # potential bug here 
-                            # can i do redirect? 
+                            # set cookie for authentication, redirect back to home page with user 
                             self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /").encode())
-
 
                         # if user is not succesfully authenticated -> redirect to home 
                         else: 
@@ -227,7 +225,6 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                     self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
             
                 else:
-            
                     current_message = "" 
                     for each in splitData:
                         if each.find("message") != -1: 
@@ -273,15 +270,11 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
                         if current_user != "": 
                             chat_db.insert_one({"username": current_user, "message": current_message, "id": 1})
-
-                            # check with TA, can redirect after chatting? Check redirect format 
                             self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
 
-                        # couldn't find user
+                        # couldn't find user -> redirect to homepage 
                         else: 
                             self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
-
-
 
                 
         else: 
@@ -291,7 +284,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
 if __name__ == "__main__":
     host = "0.0.0.0"
-    port = 8080 
+    port = 8000 
 
     socketserver.TCPServer.allow_reuse_address = True 
     server = socketserver.ThreadingTCPServer((host, port), MyTCPHandler)
