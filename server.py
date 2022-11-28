@@ -7,6 +7,7 @@ from functions import hash_password
 from functions import check_password
 from functions import get_digit
 from functions import database_list
+from handle_bytes import get_all_bytes
 
 from pymongo import MongoClient
 from template import render_template
@@ -22,11 +23,18 @@ cookie_db = db["cookie"]
 user_db = db["user"]
 token_db = db["token"]
 chat_db = db["chat"]
+xsrf_db = db["xsrf"]
 
 # syntax for cookie header 
-# ask TA about placement of cookie 
-# ask TA about checkpw of bcrypt 
-# ask TA about redirect 
+# TA questions: 
+# placement of cookie in header
+# checkpw of bcrypt 
+# redirect failing sometime 
+# cookie counting and user login, should I be counting cookie regardless of whether user is logged in? 
+# ask about obj4
+# do we need to worry about messages that needs buffering? 
+# worry about username spacing
+
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
@@ -81,7 +89,6 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             token += token_part[i]
                             i += 1
 
-                        print("current token is: ")
                         print(token)
 
                         # find token in database -> if validated -> get user 
@@ -92,8 +99,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             check = check_password(current_token, token)
                             if check == True: 
                                 current_user += each["username"] 
-                    
                         print("current user is: " + str(current_user))
+                        
                         with open("index.html", "r") as f:
                             content = f.read()
                             content = render_template("index.html", {"loop_data": list_of_message})
@@ -164,6 +171,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             
                 password = str((signup_info[1].split("="))[1])
                 hash = hash_password(password)
+
+                # security -> escape html username from signup
                 username = escape_html(username)
                 username = username.replace("+", " ")
                 #insert into database: username, password
@@ -200,9 +209,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             # store hash of token 
                             token_db.insert_one({"username": username, "token": hash,"id": 1})
 
-                            # loads a new page, but with authenticated cookie 
-                            #self.request.sendall(("HTTP/1.1 200 OK\r\nContent-Length: 41\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\n\r\n"+ str("User Successfully Authenticated, Welcome!")).encode())
-                            # check for this bug 
+                            # potential bug here 
+                            # can i do redirect? 
                             self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /").encode())
 
 
@@ -210,6 +218,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                         else: 
                             self.request.sendall(("HTTP/1.1 404 Not Found\r\nContent-Length: 36\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n\r\nThe requested content does not EXIST".encode()))
 
+                            
             if splitData[1] == "/chat": 
                 print(splitData)
 
@@ -217,8 +226,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                 if cookieData.find("id=") == -1: 
                     self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
             
-                # if auth-token -> get username + message, store in database and display on homepage
                 else:
+            
                     current_message = "" 
                     for each in splitData:
                         if each.find("message") != -1: 
@@ -256,12 +265,16 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                                 current_user += each["username"] 
                         
                         print("current sender is " + str(current_user))
+
+                        # security check -> esape html for both username + message 
                         current_user = escape_html(current_user)
                         current_message = escape_html(current_message)
                         current_message = current_message.replace("+", " ")
 
                         if current_user != "": 
                             chat_db.insert_one({"username": current_user, "message": current_message, "id": 1})
+
+                            # check with TA, can redirect after chatting? Check redirect format 
                             self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
 
                         # couldn't find user

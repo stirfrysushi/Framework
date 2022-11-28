@@ -41,9 +41,11 @@ def database_list(database):
             if eachKey == "username": 
                 username = each[eachKey]
                 file_dicts["username"] = username
+
             if eachKey == "password":
                 password = each[eachKey]
                 file_dicts["password"] = password
+
             if eachKey == "token":
                 token = each[eachKey]
                 file_dicts["token"] = token 
@@ -51,6 +53,11 @@ def database_list(database):
             if eachKey == "message": 
                 message = each[eachKey]
                 file_dicts["message"] = message
+            if eachKey == "xsrf": 
+
+                xsrf = each[eachKey]
+                file_dicts["xsrf"] = xsrf
+                
         list_of_data.append(file_dicts)
 
     return list_of_data
