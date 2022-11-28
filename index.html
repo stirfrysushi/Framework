@@ -27,7 +27,7 @@
 
     </form>
 
-<h4> Login Here! ♡＼(￣▽￣)／♡ </h4>
+<h4> Login Here! ᕕ(╯°□°)ᕗ </h4>
     <form action="/login" id="login-form" method="post" enctype="form-data">
 
       <label for="username">username: </label>
@@ -40,6 +40,20 @@
 
     </form>
 
+    <h4>Chat Box (Please Login To Send Message) ◑____________◑ </h4>
+    <form action="/chat" id="chat-form" method="post" enctype="form-data">
+
+        <label for="chat">chat: </label>
+        <textarea id="chat" name="message" cols="20" rows="1"></textarea>
+        <br/>
+        <input type="submit" value="Send">
+
+      </form>
+
+    <h4> Messages (Please Give It A Few Seconds To Load T-T): </h4>
+{{loop}}
+    <p> {{username}}: {{message}}</p>
+{{end_loop}}
 
 </body>
 </html>

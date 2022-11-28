@@ -26,6 +26,7 @@ chat_db = db["chat"]
 # syntax for cookie header 
 # ask TA about placement of cookie 
 # ask TA about checkpw of bcrypt 
+# ask TA about redirect 
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
@@ -42,10 +43,14 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                 print("received data is: ")
                 print(received_data.decode().split())
 
+                # have to show chat-history regardless when getting to homepage 
+                list_of_message = database_list(chat_db)
+
                 # if no cookie, set visits = 1 
                 if cookieData.find("Cookie") == -1: 
                     with open("index.html", "r") as f:
                         content = f.read()
+                        content = render_template("index.html", {"loop_data": list_of_message})
                         content = content.replace("{{cookie}}", "1")
                         content = content.replace("{{user}}","!")
                         length = len(content)
@@ -91,6 +96,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                         print("current user is: " + str(current_user))
                         with open("index.html", "r") as f:
                             content = f.read()
+                            content = render_template("index.html", {"loop_data": list_of_message})
                             content = content.replace("{{cookie}}", str(current_visit))
                             content = content.replace("{{user}}", str(current_user + "!"))
                             length = len(content)
@@ -100,6 +106,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                     else: 
                         with open("index.html", "r") as f:
                             content = f.read()
+                            content = render_template("index.html", {"loop_data": list_of_message})
                             content = content.replace("{{cookie}}", str(current_visit))
                             content = content.replace("{{user}}", "!")
                             length = len(content)
@@ -157,6 +164,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             
                 password = str((signup_info[1].split("="))[1])
                 hash = hash_password(password)
+                username = escape_html(username)
+                username = username.replace("+", " ")
                 #insert into database: username, password
                 user_db.insert_one({"username": username, "password": hash, "id": 1})
                 
@@ -192,11 +201,74 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             token_db.insert_one({"username": username, "token": hash,"id": 1})
 
                             # loads a new page, but with authenticated cookie 
-                            self.request.sendall(("HTTP/1.1 200 OK\r\nContent-Length: 41\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\n\r\n"+ str("User Successfully Authenticated, Welcome!")).encode())
+                            #self.request.sendall(("HTTP/1.1 200 OK\r\nContent-Length: 41\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\n\r\n"+ str("User Successfully Authenticated, Welcome!")).encode())
+                            # check for this bug 
+                            self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /").encode())
+
 
                         # if user is not succesfully authenticated -> redirect to home 
                         else: 
                             self.request.sendall(("HTTP/1.1 404 Not Found\r\nContent-Length: 36\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n\r\nThe requested content does not EXIST".encode()))
+
+            if splitData[1] == "/chat": 
+                print(splitData)
+
+                # if no auth-token -> redirect 
+                if cookieData.find("id=") == -1: 
+                    self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+            
+                # if auth-token -> get username + message, store in database and display on homepage
+                else:
+                    current_message = "" 
+                    for each in splitData:
+                        if each.find("message") != -1: 
+                            each = (each.split("="))[1]
+                            current_message += each
+                    
+                    print("current message is: ")
+                    print(current_message)
+
+                    token_string = ""
+                    for each in splitData:
+                        if each.find("id=") != -1: 
+                            token_string += each 
+
+                    # auth_token index; make sure there is token 
+                    if len(token_string) != 0: 
+                        token_string = token_string.split("=")
+                        token_part = token_string[1]
+                        token = ""
+                        i = 0 
+                        while i < len(token_part) and token_part[i] != ";":
+                            token += token_part[i]
+                            i += 1
+
+                        print("current token is: ")
+                        print(token)
+
+                        # find token in database -> if validated -> get user 
+                        list_of_token = database_list(token_db)
+                        current_user = ""
+                        for each in list_of_token: 
+                            current_token = each["token"]
+                            check = check_password(current_token, token)
+                            if check == True: 
+                                current_user += each["username"] 
+                        
+                        print("current sender is " + str(current_user))
+                        current_user = escape_html(current_user)
+                        current_message = escape_html(current_message)
+                        current_message = current_message.replace("+", " ")
+
+                        if current_user != "": 
+                            chat_db.insert_one({"username": current_user, "message": current_message, "id": 1})
+                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+
+                        # couldn't find user
+                        else: 
+                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+
+
 
                 
         else: 
@@ -208,6 +280,7 @@ if __name__ == "__main__":
     host = "0.0.0.0"
     port = 8080 
 
+    socketserver.TCPServer.allow_reuse_address = True 
     server = socketserver.ThreadingTCPServer((host, port), MyTCPHandler)
     server.serve_forever()
 

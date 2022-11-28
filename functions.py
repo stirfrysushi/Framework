@@ -44,10 +44,13 @@ def database_list(database):
             if eachKey == "password":
                 password = each[eachKey]
                 file_dicts["password"] = password
-
             if eachKey == "token":
                 token = each[eachKey]
                 file_dicts["token"] = token 
+
+            if eachKey == "message": 
+                message = each[eachKey]
+                file_dicts["message"] = message
         list_of_data.append(file_dicts)
 
     return list_of_data
