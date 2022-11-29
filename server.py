@@ -34,6 +34,7 @@ xsrf_db = db["xsrf"]
 # ask about obj4
 # do we need to worry about messages that needs buffering? 
 # worry about username spacing
+# redirect not working when used with nginx? 
 
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
@@ -210,6 +211,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             token_db.insert_one({"username": username, "token": hash,"id": 1})
 
                             # set cookie for authentication, redirect back to home page with user 
+                            # login cause error? redirect issue
                             self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /").encode())
 
                         # if user is not succesfully authenticated -> redirect to home 
