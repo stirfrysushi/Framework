@@ -212,9 +212,11 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
                             # set cookie for authentication, redirect back to home page with user 
                             # login cause error? redirect issue
-                            self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /").encode())
+                            self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /\r\n\r\n").encode())
 
                         # if user is not succesfully authenticated -> redirect to home 
+                            
+                        # if wrong password -> 403 forbidden
                         else: 
                             self.request.sendall(("HTTP/1.1 404 Not Found\r\nContent-Length: 36\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n\r\nThe requested content does not EXIST".encode()))
 
@@ -270,13 +272,15 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                         current_message = escape_html(current_message)
                         current_message = current_message.replace("+", " ")
 
+                        # url decoder -> fix message
+
                         if current_user != "": 
                             chat_db.insert_one({"username": current_user, "message": current_message, "id": 1})
-                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /\r\n\r\n".encode())
 
                         # couldn't find user -> redirect to homepage 
                         else: 
-                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+                            self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /\r\n\r\n".encode())
 
                 
         else: 
