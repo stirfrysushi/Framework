@@ -41,8 +41,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
         received_data = self.request.recv(2048)
+        rn = ("\r\n\r\n").encode() 
         cookieData = received_data.decode()
-        splitData = received_data.decode().split() 
+        currentData = received_data.split(rn)
+        header = currentData[0]
+        header_length = len(header)
+        splitData = header.decode().split() 
 
         # GET request -> home page 
         if splitData[0] == "GET": 
@@ -187,6 +191,8 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                     self.request.sendall(("HTTP/1.1 200 OK\r\nContent-Length: " + str(length) + "\r\nContent-Type: text/html; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n\r\n"+ str(content)).encode())
 
                     
+
+            # fix this part 
             if splitData[1] == "/login": 
                 split = received_data.decode().split()
                 signup_index = len(split) - 1 
@@ -215,20 +221,61 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                             self.request.sendall(("HTTP/1.1 302 Found\r\nContent-Length: 0\r\nSet-Cookie: id=" + str(token) + "; HttpOnly; Max-Age=7200\r\nLocation: /\r\n\r\n").encode())
 
                         # if user is not succesfully authenticated -> redirect to home 
-                            
                         # if wrong password -> 403 forbidden
                         else: 
                             self.request.sendall(("HTTP/1.1 404 Not Found\r\nContent-Length: 36\r\nContent-Type: text/plain; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n\r\nThe requested content does not EXIST".encode()))
 
                             
             if splitData[1] == "/chat": 
-                print(splitData)
 
-                # if no auth-token -> redirect 
+                content_length = 0 
+                encoded_rn = "\r\n\r\n".encode()
+                split = received_data.split(encoded_rn)
+
+                # get length 
+                header = split[0].decode().split() 
+                length_index = (header.index("Content-Length:")) + 1 
+                data_length = header[length_index]
+                content_length += int(data_length)
+
+                # get boundary 
+                header_index = (header.index('multipart/form-data;')) + 1 
+                boundary_section = header[header_index].split("=")
+                boundary = boundary_section[1]
+
+                # see if got enough data: 
+                received_length = len(received_data)
+                data_array = bytearray(received_data)
+                if received_length < content_length + header_length: 
+                    while received_length <= content_length + header_length:
+                        more_data = self.request.recv(2048)
+                        data_array += bytearray(more_data)
+                        received_length += len(more_data)
+
+                # split body 
+                boundary_encoded = boundary.encode() 
+                data_array = data_array.split(boundary_encoded)
+                caption_section = data_array[3].decode().split("\r\n")
+                caption = caption_section[3]
+                if caption_section[4] != "--": 
+                    i = 4
+                    while caption_section[i] != "--":
+                        caption += "\r\n"
+                        caption += caption_section[i]
+                        i += 1
+                    
+                    # prevent html injections 
+                    caption = caption.replace('&', '&amp;')
+                    caption = caption.replace('<', '&lt;')
+                    caption = caption.replace('>', '&gt;')
+
+                print(caption)
+                # if no auth-token -> redirect to homepage 
                 if cookieData.find("id=") == -1: 
-                    self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /".encode())
+                    self.request.sendall("HTTP/1.1 301 Moved Permanently\r\nContent-Length: 0\r\nLocation: /\r\n\r\n".encode())
             
                 else:
+                    # get comment from code hw2 
                     current_message = "" 
                     for each in splitData:
                         if each.find("message") != -1: 
